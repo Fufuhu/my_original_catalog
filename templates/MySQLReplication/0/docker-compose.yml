@@ -77,7 +77,7 @@ services:
       io.rancher.container.pull_image: always
       io.rancher.container.requested_ip: 10.42.2.10
       io.rancher.sidekicks: master-sidekick
-  mysql-master-lb:
+  mysql-lb:
     image: rancher/lb-service-haproxy:v0.7.9
     ports:
     - 3306:3306/tcp
