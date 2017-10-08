@@ -1,0 +1,79 @@
+version: '2'
+services:
+  slave:
+    image: mysql:5.7
+    hostname: slave
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+    stdin_open: true
+    tty: true
+    links:
+    - master:master
+    command:
+    - mysqld
+    - --port=3306
+    - --server-id=102
+    - --character-set-server=utf8mb4
+    - --datadir=/var/lib/mysql
+    - --log-error=/var/log/mysql/error.log
+    - --slow-query-log
+    - --slow-query-log-file=/var/log/mysql/slow_query_log.log
+    - --long-query-time=5
+    - --log-bin
+    - --max-connections=4096
+    - --gtid-mode=on
+    - --enforce-gtid-consistency=on
+    labels:
+      io.rancher.scheduler.affinity:container_label_soft_ne: io.rancher.stack_service.name=mysql-replication/master
+      io.rancher.sidekicks: slave-sidekick
+      io.rancher.container.pull_image: always
+      io.rancher.container.requested_ip: 10.42.2.11
+  master-sidekick:
+    image: mysql:5.7
+    entrypoint:
+    - /bin/bash
+    - -c
+    - while :; do sleep 10; if [ `mysqladmin -h 10.42.2.10 -u root -proot | grep alive | wc -l` -eq 1 ]; then echo "alive"; mysql -u root -proot -h 10.42.2.10 -e "CREATE USER 'repl'@'%' IDENTIFIED BY 'repl'; GRANT REPLICATION SLAVE ON *.* TO 'repl'@'%';"; break; fi done
+    stdin_open: true
+    tty: true
+    labels:
+      io.rancher.container.pull_image: always
+      io.rancher.container.start_once: 'true'
+  slave-sidekick:
+    image: mysql:5.7
+    entrypoint:
+    - /bin/bash
+    - -c
+    - while :; do sleep 10; if [ `mysqladmin -h 10.42.2.10 -u root -proot | grep alive | wc -l` -eq 1 ]; then echo "master alive"; if [ `mysqladmin -h 10.42.2.11 -u root -proot | grep alive | wc -l` -eq 1 ]; then echo "slave also alive"; mysql -u root -proot -h 10.42.2.11 -e "CHANGE MASTER TO MASTER_HOST='10.42.2.10', MASTER_USER='repl', MASTER_PASSWORD='repl', MASTER_AUTO_POSITION=1; START SLAVE;"; sleep 10; mysql -u root -proot -h 10.42.2.11 -e "show slave status\G";break; fi fi done
+    stdin_open: true
+    tty: true
+    links:
+    - master:master
+    labels:
+      io.rancher.container.pull_image: always
+      io.rancher.container.start_once: 'true'
+  master:
+    image: mysql:5.7
+    hostname: master
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+    stdin_open: true
+    tty: true
+    command:
+    - mysqld
+    - --port=3306
+    - --server-id=101
+    - --character-set-server=utf8mb4
+    - --datadir=/var/lib/mysql
+    - --log-error=/var/log/mysql/error.log
+    - --slow-query-log
+    - --slow-query-log-file=/var/log/mysql/slow_query_log.log
+    - --long-query-time=5
+    - --log-bin
+    - --max-connections=4096
+    - --gtid-mode=on
+    - --enforce-gtid-consistency=on
+    labels:
+      io.rancher.container.pull_image: always
+      io.rancher.container.requested_ip: 10.42.2.10
+      io.rancher.sidekicks: master-sidekick

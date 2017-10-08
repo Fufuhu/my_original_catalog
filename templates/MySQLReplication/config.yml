@@ -1,0 +1,4 @@
+name: MySQL Asynchronous Replication
+description: "Asynchronous replication cluster of MySQL"
+version: v0.1
+category: "Databases"
