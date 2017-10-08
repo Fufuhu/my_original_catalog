@@ -1,4 +1,8 @@
 version: '2'
+catalog:
+  name: "MySQL Asynchrouns Replication"
+  version: "v0.1"
+  description: "MySQL Asynchronous replication"
 services:
   slave:
     retain_ip: true
