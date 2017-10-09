@@ -4,7 +4,7 @@ catalog:
   version: "v0.1"
   description: "MySQL Asynchronous replication"
 services:
-  slave:
+  master:
     retain_ip: true
     scale: 1
     start_on_create: true
@@ -12,11 +12,11 @@ services:
     retain_ip: true
     scale: 1
     start_on_create: true
-  slave-sidekick:
+  slave:
     retain_ip: true
     scale: 1
     start_on_create: true
-  master:
+  slave-sidekick:
     retain_ip: true
     scale: 1
     start_on_create: true
